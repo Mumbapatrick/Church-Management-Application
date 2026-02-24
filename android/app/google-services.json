@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "563043534193",
+    "project_id": "lively-wonder-461707-a8",
+    "storage_bucket": "lively-wonder-461707-a8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:563043534193:android:29d020f11d50953a9022d0",
+        "android_client_info": {
+          "package_name": "com.churchmanagement.wordprayer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "563043534193-lt4vhuehv8tc3aeipplrf5qolpcabggo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACyuay0SxeWiE2xLx0wMQCZlkP1xi9LQY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "563043534193-lt4vhuehv8tc3aeipplrf5qolpcabggo.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "563043534193-213k7l4cetbnbauqdgnsete73phgvjlf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.church.wordprayer"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
