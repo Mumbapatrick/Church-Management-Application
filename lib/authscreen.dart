@@ -10,6 +10,15 @@ import 'dashboard.dart';
 import 'model/user.dart';
 import 'env_config.dart';
 
+// ============================================================
+// COLORS — MATCHED TO APP THEME
+// ============================================================
+
+const Color purple = Color(0xFF6A0DAD);
+const Color purpleLight = Color(0xFF8B5CF6);
+const Color purpleDark = Color(0xFF4C087A);
+const Color gold = Color(0xFFFFD700);
+
 class AuthScreen extends StatefulWidget {
   final Function(User) onLogin;
   const AuthScreen({Key? key, required this.onLogin}) : super(key: key);
@@ -22,10 +31,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   late TabController _tabController;
   bool isLoading = false;
 
+  // Password visibility states
+  bool _obscureLoginPassword = true;
+  bool _obscureSignupPassword = true;
+  bool _obscureConfirmPassword = true;
+
   final _auth = fbAuth.FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
 
-  // Controllers
+  // Text Controllers
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _signupNameController = TextEditingController();
@@ -33,6 +47,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   final _signupPhoneController = TextEditingController();
   final _signupLocationController = TextEditingController();
   final _signupPasswordController = TextEditingController();
+  final _signupConfirmPasswordController = TextEditingController();
 
   @override
   void initState() {
@@ -50,19 +65,20 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     _signupPhoneController.dispose();
     _signupLocationController.dispose();
     _signupPasswordController.dispose();
+    _signupConfirmPasswordController.dispose();
     super.dispose();
   }
 
   // ---------- TOAST HELPERS ----------
   void _showError(String msg) => Fluttertoast.showToast(
     msg: msg,
-    backgroundColor: Colors.redAccent,
+    backgroundColor: Colors.red.shade700,
     textColor: Colors.white,
   );
 
   void _showSuccess(String msg) => Fluttertoast.showToast(
     msg: msg,
-    backgroundColor: Colors.green,
+    backgroundColor: purple,
     textColor: Colors.white,
   );
 
@@ -128,13 +144,25 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     final phone = _signupPhoneController.text.trim();
     final location = _signupLocationController.text.trim();
     final password = _signupPasswordController.text;
+    final confirmPassword = _signupConfirmPasswordController.text;
 
     if (name.isEmpty ||
         email.isEmpty ||
         phone.isEmpty ||
         location.isEmpty ||
-        password.isEmpty) {
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       _showError("Please fill all fields");
+      return;
+    }
+
+    if (password != confirmPassword) {
+      _showError("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      _showError("Password must be at least 6 characters");
       return;
     }
 
@@ -185,37 +213,29 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     setState(() => isLoading = true);
 
     try {
-      final clientId = EnvConfig.webClientId;
-      if (clientId == null || clientId.isEmpty) {
-        _showError("Missing Google WEB_CLIENT_ID. Please configure it first.");
-        return;
-      }
-
       if (kIsWeb) {
         final googleProvider = fbAuth.GoogleAuthProvider();
         final userCredential = await _auth.signInWithPopup(googleProvider);
-        await _loadUserFromFirebase(userCredential.user!.uid, createIfMissing: true);
-        await _navigateToDashboard(userCredential.user!);
-        _showSuccess("Google login successful!");
-      } else {
-        final googleSignIn = GoogleSignIn(clientId: clientId);
-        final googleUser = await googleSignIn.signIn();
-
-        if (googleUser == null) {
-          _showError("Google sign-in canceled");
-          return;
+        if (userCredential.user != null) {
+          await _loadUserFromFirebase(userCredential.user!.uid, createIfMissing: true);
+          await _navigateToDashboard(userCredential.user!);
+          _showSuccess("Google login successful!");
         }
+      } else {
+        await GoogleSignIn.instance.initialize();
+        final googleUser = await GoogleSignIn.instance.authenticate();
 
         final googleAuth = await googleUser.authentication;
         final credential = fbAuth.GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
 
         final userCredential = await _auth.signInWithCredential(credential);
-        await _loadUserFromFirebase(userCredential.user!.uid, createIfMissing: true);
-        await _navigateToDashboard(userCredential.user!);
-        _showSuccess("Google login successful!");
+        if (userCredential.user != null) {
+          await _loadUserFromFirebase(userCredential.user!.uid, createIfMissing: true);
+          await _navigateToDashboard(userCredential.user!);
+          _showSuccess("Google login successful!");
+        }
       }
     } catch (e) {
       _showError("Google login failed: $e");
@@ -231,14 +251,29 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       builder: (ctx) {
         String phone = "";
         return AlertDialog(
-          title: const Text("Enter Phone Number"),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text("Enter Phone Number", style: TextStyle(fontWeight: FontWeight.w800)),
           content: TextField(
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(hintText: "+254700000000"),
+            decoration: InputDecoration(
+              hintText: "+254700000000",
+              filled: true,
+              fillColor: const Color(0xFFF4ECFA),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
             onChanged: (v) => phone = v,
           ),
           actions: [
             TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w700)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: purple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
               onPressed: () {
                 if (phone.isEmpty || !phone.startsWith('+')) {
                   _showError("Please enter a valid phone number");
@@ -247,7 +282,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   _startPhoneVerification(phone);
                 }
               },
-              child: const Text("Next"),
+              child: const Text("Next", style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ],
         );
@@ -352,44 +387,110 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      body: SafeArea(
-        child: SingleChildScrollView(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF4C087A),
+              Color(0xFF6A0DAD),
+              Color(0xFF8B5CF6),
+              Color(0xFFFFD700),
+            ],
+            stops: [0.0, 0.35, 0.70, 1.0],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
           child: Center(
-            child: Card(
-              elevation: 8,
-              margin: const EdgeInsets.all(24),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              child: Container(
-                width: 380,
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      "Word & Prayer for All Nations",
-                      style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.purple),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    TabBar(
-                      controller: _tabController,
-                      labelColor: Colors.purple,
-                      unselectedLabelColor: Colors.grey,
-                      tabs: const [Tab(text: "Login"), Tab(text: "Sign Up")],
-                    ),
-                    SizedBox(
-                      height: 500,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [_buildLoginTab(), _buildSignupTab()],
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.18),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: purple.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.church_rounded,
+                          color: purple,
+                          size: 26,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      const Text(
+                        "Word & Prayer for All Nations",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF202124),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        "Sign in or create an account to continue",
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        height: 48,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4ECFA),
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: TabBar(
+                          controller: _tabController,
+                          indicator: BoxDecoration(
+                            color: purple,
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          labelColor: Colors.white,
+                          unselectedLabelColor: purple,
+                          labelStyle: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                          tabs: const [
+                            Tab(text: "Login"),
+                            Tab(text: "Sign Up"),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 480, // Increased height slightly to fit extra field
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [_buildLoginTab(), _buildSignupTab()],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -399,115 +500,237 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
   }
 
+  // ---------- CUSTOM TEXT FIELD HELPER ----------
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+        filled: true,
+        fillColor: const Color(0xFFF9F6FC),
+        suffixIcon: suffixIcon,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: purple, width: 1.5),
+        ),
+      ),
+    );
+  }
+
   // ---------- LOGIN TAB ----------
   Widget _buildLoginTab() {
-    return Column(
-      children: [
-        TextField(
-          controller: _emailController,
-          decoration: const InputDecoration(labelText: "Email"),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _passwordController,
-          decoration: const InputDecoration(labelText: "Password"),
-          obscureText: true,
-        ),
-        const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: _resetPassword,
-            child: const Text("Forgot Password?"),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          _buildTextField(controller: _emailController, label: "Email"),
+          const SizedBox(height: 12),
+          _buildTextField(
+            controller: _passwordController,
+            label: "Password",
+            obscureText: _obscureLoginPassword,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureLoginPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                color: Colors.grey,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscureLoginPassword = !_obscureLoginPassword;
+                });
+              },
+            ),
           ),
-        ),
-        ElevatedButton(
-          onPressed: isLoading ? null : _handleLogin,
-          style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
-              backgroundColor: Colors.purple),
-          child: Text(isLoading ? "Logging in..." : "Login"),
-        ),
-        const SizedBox(height: 16),
-        const Text("Or continue with:"),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _socialButton(FontAwesomeIcons.google, Colors.red, _handleGoogleLogin),
-            const SizedBox(width: 16),
-            _socialButton(FontAwesomeIcons.phone, Colors.green, _goToPhoneInput),
-          ],
-        ),
-      ],
+          const SizedBox(height: 2),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _resetPassword,
+              style: TextButton.styleFrom(padding: EdgeInsets.zero),
+              child: const Text(
+                "Forgot Password?",
+                style: TextStyle(
+                  color: purple,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          ElevatedButton(
+            onPressed: isLoading ? null : _handleLogin,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              backgroundColor: purple,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: Text(
+              isLoading ? "Logging in..." : "Login",
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(child: Divider(color: Colors.grey.shade300)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  "Or continue with",
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(child: Divider(color: Colors.grey.shade300)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _socialButton(FontAwesomeIcons.google, Colors.red, _handleGoogleLogin),
+              const SizedBox(width: 16),
+              _socialButton(FontAwesomeIcons.phone, Colors.green, _goToPhoneInput),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   // ---------- SIGNUP TAB ----------
   Widget _buildSignupTab() {
-    return Column(
-      children: [
-        TextField(
-          controller: _signupNameController,
-          decoration: const InputDecoration(labelText: "Full Name"),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _signupEmailController,
-          decoration: const InputDecoration(labelText: "Email"),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _signupPhoneController,
-          decoration: const InputDecoration(labelText: "Phone Number"),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _signupLocationController,
-          decoration: const InputDecoration(labelText: "Location"),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _signupPasswordController,
-          decoration: const InputDecoration(labelText: "Password"),
-          obscureText: true,
-        ),
-        const SizedBox(height: 18),
-        ElevatedButton(
-          onPressed: isLoading ? null : _handleSignup,
-          style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
-              backgroundColor: Colors.purple),
-          child: Text(isLoading ? "Creating..." : "Sign Up"),
-        ),
-        const SizedBox(height: 12),
-        const Text("Or sign up with:"),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _socialButton(FontAwesomeIcons.google, Colors.red, _handleGoogleLogin),
-            const SizedBox(width: 16),
-            _socialButton(FontAwesomeIcons.phone, Colors.green, _goToPhoneInput),
-          ],
-        ),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          _buildTextField(controller: _signupNameController, label: "Full Name"),
+          const SizedBox(height: 10),
+          _buildTextField(controller: _signupEmailController, label: "Email"),
+          const SizedBox(height: 10),
+          _buildTextField(controller: _signupPhoneController, label: "Phone Number"),
+          const SizedBox(height: 10),
+          _buildTextField(controller: _signupLocationController, label: "Location"),
+          const SizedBox(height: 10),
+          _buildTextField(
+            controller: _signupPasswordController,
+            label: "Password",
+            obscureText: _obscureSignupPassword,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureSignupPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                color: Colors.grey,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscureSignupPassword = !_obscureSignupPassword;
+                });
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildTextField(
+            controller: _signupConfirmPasswordController,
+            label: "Confirm Password",
+            obscureText: _obscureConfirmPassword,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                color: Colors.grey,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                });
+              },
+            ),
+          ),
+          const SizedBox(height: 14),
+          ElevatedButton(
+            onPressed: isLoading ? null : _handleSignup,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              backgroundColor: gold,
+              foregroundColor: purpleDark,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: Text(
+              isLoading ? "Creating..." : "Sign Up",
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(child: Divider(color: Colors.grey.shade300)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  "Or sign up with",
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(child: Divider(color: Colors.grey.shade300)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _socialButton(FontAwesomeIcons.google, Colors.red, _handleGoogleLogin),
+              const SizedBox(width: 16),
+              _socialButton(FontAwesomeIcons.phone, Colors.green, _goToPhoneInput),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   // ---------- SOCIAL BUTTON ----------
-  Widget _socialButton(IconData icon, Color color, VoidCallback onPressed) {
+  Widget _socialButton(dynamic iconData, Color color, VoidCallback onPressed) {
     return InkWell(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: 50,
-        height: 50,
+        width: 46,
+        height: 46,
         decoration: BoxDecoration(
-            color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(15)),
-        child: Center(child: FaIcon(icon, color: color, size: 24)),
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Center(
+          child: FaIcon(
+            iconData,
+            color: color,
+            size: 20,
+          ),
+        ),
       ),
     );
   }
 }
-

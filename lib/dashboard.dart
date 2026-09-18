@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'widgets/animation.dart';
 import 'model/user.dart';
 import 'membershiprequests.dart';
 import 'donation.dart';
@@ -10,6 +10,24 @@ import 'prayer_request.dart';
 import 'meetingscheduler.dart';
 import 'authscreen.dart';
 import 'admindashboard.dart';
+
+// ============================================================
+// APP COLORS
+// ============================================================
+
+const Color purple = Color(0xFF6A0DAD);
+const Color purpleLight = Color(0xFF8B5CF6);
+const Color purpleDark = Color(0xFF4C087A);
+
+const Color gold = Color(0xFFFFD700);
+const Color backgroundWhite = Color(0xFFF8F7FC);
+
+const Color textDark = Color(0xFF1E293B);
+const Color textGrey = Color(0xFF64748B);
+
+// ============================================================
+// DASHBOARD
+// ============================================================
 
 class Dashboard extends StatelessWidget {
   final User user;
@@ -23,94 +41,276 @@ class Dashboard extends StatelessWidget {
     this.onLogout,
   }) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> menuItems = [
+  List<Map<String, dynamic>> _menuItems() {
+    final items = <Map<String, dynamic>>[
       {
         "title": "Membership Requests",
-        "icon": LucideIcons.userPlus,
-        "color": [Colors.blue, Colors.blueAccent],
+        "icon": Icons.person_add_rounded,
         "screen": "membership_request",
         "description": "Request to become a member",
+        "gradient": const LinearGradient(
+          colors: [Color(0xFF8A2387), Color(0xFFE94057)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       },
       {
         "title": "Events",
-        "icon": LucideIcons.calendarDays,
-        "color": [Colors.indigo, Colors.indigoAccent],
+        "icon": Icons.calendar_today_rounded,
         "screen": "events",
         "description": "View upcoming church events",
+        "gradient": const LinearGradient(
+          colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       },
       {
         "title": "Donations",
-        "icon": LucideIcons.dollarSign,
-        "color": [Colors.green, Colors.greenAccent],
+        "icon": Icons.attach_money_rounded,
         "screen": "donations",
         "description": "Make tithes and offerings",
+        "gradient": const LinearGradient(
+          colors: [Color(0xFF11998E), Color(0xFF38EF7D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       },
       {
         "title": "Messages",
-        "icon": LucideIcons.messageSquare,
-        "color": [Colors.orange, Colors.deepOrange],
+        "icon": Icons.chat_bubble_outline_rounded,
         "screen": "messages",
         "description": "Devotionals and announcements",
+        "gradient": const LinearGradient(
+          colors: [Color(0xFFFF8008), Color(0xFFFFC837)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       },
       {
         "title": "Prayer Requests",
-        "icon": LucideIcons.heart,
-        "color": [Colors.pink, Colors.pinkAccent],
+        "icon": Icons.favorite_border_rounded,
         "screen": "prayer_requests",
         "description": "Submit and view prayer requests",
+        "gradient": const LinearGradient(
+          colors: [Color(0xFFFF007F), Color(0xFFFF758C)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       },
       {
         "title": "Meet with Pastor",
-        "icon": LucideIcons.clock,
-        "color": [Colors.teal, Colors.tealAccent],
+        "icon": Icons.access_time_rounded,
         "screen": "meeting_scheduler",
         "description": "Schedule meetings with Rev. Pastor",
+        "gradient": const LinearGradient(
+          colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       },
     ];
 
     if (user.role == "admin") {
-      menuItems.add({
+      items.add({
         "title": "Admin Dashboard",
-        "icon": LucideIcons.barChart3,
-        "color": [Colors.red, Colors.redAccent],
+        "icon": Icons.insights_rounded,
         "screen": "admin",
-        "description": "Church analytics and management",
+        "description": "Church analytics & management",
+        "gradient": const LinearGradient(
+          colors: [Color(0xFF4B1248), Color(0xFFF0C27B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       });
     }
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
+    return items;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final menuItems = _menuItems();
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(
+          Theme.of(context).textTheme,
+        ),
+      ),
+      child: Scaffold(
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF4C087A),
+                Color(0xFF6A0DAD),
+                Color(0xFF8B5CF6),
+                Color(0xFFFFD700),
+              ],
+              stops: [0.0, 0.35, 0.70, 1.0],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(context),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1250),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 24, 16, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const _DashboardTitle(),
+                              const SizedBox(height: 24),
+                              _buildMenuGrid(context, menuItems),
+                              const SizedBox(height: 28),
+                              const _DashboardFooter(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuGrid(
+      BuildContext context,
+      List<Map<String, dynamic>> menuItems,
+      ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        bool isDesktop = constraints.maxWidth >= 900;
+        int columns = isDesktop ? 3 : 2;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: menuItems.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: isDesktop ? 16 : 14,
+            mainAxisSpacing: isDesktop ? 16 : 14,
+            childAspectRatio: isDesktop ? 1.20 : 0.85,
+          ),
+          itemBuilder: (context, index) {
+            final item = menuItems[index];
+            return ReusableEventCard(
+              index: index,
+              onTap: () => _navigate(context, item["screen"] as String),
+              child: _MenuCard(item: item),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final firstName = user.name.trim().isNotEmpty
+        ? user.name.trim().split(" ").first
+        : "User";
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.96),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.14),
+            blurRadius: 18,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1250),
+          child: Row(
             children: [
-              _buildHeader(context),
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: _DashboardTitle(),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.count(
-                  shrinkWrap: true,
-                  crossAxisCount: 2,
-                  childAspectRatio: 1,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  children: menuItems.map((item) {
-                    return GestureDetector(
-                      onTap: () => _navigate(context, item["screen"] as String),
-                      child: _MenuCard(item: item),
-                    );
-                  }).toList(),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [purple, purpleLight],
+                  ),
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: [
+                    BoxShadow(
+                      color: purple.withOpacity(0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(13),
+                  child: user.profilePhoto != null &&
+                      user.profilePhoto!.isNotEmpty
+                      ? Image.network(
+                    user.profilePhoto!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _initials(firstName),
+                  )
+                      : _initials(firstName),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: _QuickStatsFirestore(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Welcome back",
+                      style: GoogleFonts.plusJakartaSans(
+                        color: textGrey,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      firstName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: textDark,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _HeaderButton(
+                icon: Icons.settings_rounded,
+                tooltip: "Profile",
+                onTap: () => _navigate(context, "profile"),
+              ),
+              const SizedBox(width: 8),
+              _HeaderButton(
+                icon: Icons.logout_rounded,
+                tooltip: "Logout",
+                isDanger: true,
+                onTap: () => _logout(context),
               ),
             ],
           ),
@@ -119,319 +319,386 @@ class Dashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundImage: user.profilePhoto != null
-                    ? NetworkImage(user.profilePhoto!)
-                    : null,
-                child: user.profilePhoto == null
-                    ? Text(
-                  user.name
-                      .split(" ")
-                      .map((e) => e[0])
-                      .join(),
-                  style: const TextStyle(
-                      color: Colors.purple, fontSize: 18),
-                )
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Welcome, ${user.name.split(" ")[0]}",
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(Icons.settings, color: Colors.grey[600]),
-                onPressed: () => _navigate(context, "profile"),
-              ),
-              IconButton(
-                icon: const Icon(Icons.logout, color: Colors.red),
-                onPressed: () => _logout(context),
-              ),
-            ],
-          ),
-        ],
+  Widget _initials(String name) {
+    return Center(
+      child: Text(
+        name.isNotEmpty ? name.substring(0, 1).toUpperCase() : "U",
+        style: GoogleFonts.plusJakartaSans(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
 
   void _navigate(BuildContext context, String screen) {
+    Widget? targetPage;
+
     switch (screen) {
       case "membership_request":
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                MembershipRequestScreen(onBack: () => Navigator.pop(context)),
-          ),
+        targetPage = MembershipRequestScreen(
+          onBack: () => Navigator.pop(context),
         );
         break;
       case "events":
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EventsPage(onBack: () => Navigator.pop(context)),
-          ),
+        targetPage = EventsPage(
+          onBack: () => Navigator.pop(context),
         );
         break;
       case "donations":
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                DonationsScreen(user: user, onBack: () => Navigator.pop(context)),
-          ),
+        targetPage = DonationsScreen(
+          user: user,
+          onBack: () => Navigator.pop(context),
         );
         break;
       case "messages":
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => MessagesScreen(onBack: () => Navigator.pop(context)),
-          ),
+        targetPage = MessagesScreen(
+          onBack: () => Navigator.pop(context),
         );
         break;
       case "prayer_requests":
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                PrayerRequests(onBack: () => Navigator.pop(context)),
-          ),
+        targetPage = PrayerRequests(
+          onBack: () => Navigator.pop(context),
         );
         break;
       case "meeting_scheduler":
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                MeetingScheduler(onBack: () => Navigator.pop(context)),
-          ),
+        targetPage = MeetingScheduler(
+          onBack: () => Navigator.pop(context),
         );
         break;
       case "admin":
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AdminDashboard(onBack: () => Navigator.pop(context)),
-          ),
+        targetPage = AdminDashboard(
+          onBack: () => Navigator.pop(context),
         );
         break;
       case "profile":
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) =>
-                  Scaffold(body: Center(child: Text("Profile Screen")))),
+        targetPage = Scaffold(
+          backgroundColor: backgroundWhite,
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: Colors.white,
+            foregroundColor: textDark,
+            title: Text(
+              "Profile",
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          body: Center(
+            child: Container(
+              margin: const EdgeInsets.all(25),
+              padding: const EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.96),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Text(
+                "Profile Screen",
+                style: GoogleFonts.plusJakartaSans(
+                  color: textDark,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
         );
         break;
       default:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Screen not found")),
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: purpleDark,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            content: Text(
+              "Screen not found",
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+            ),
+          ),
         );
+        return;
+    }
+
+    if (targetPage != null) {
+      Navigator.push(context, SmoothPageRoute(page: targetPage));
     }
   }
 
   void _logout(BuildContext context) {
+    if (onLogout != null) {
+      onLogout!();
+      return;
+    }
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => AuthScreen(onLogin: (User user) {}),
+      SmoothPageRoute(
+        page: AuthScreen(onLogin: (User user) {}),
       ),
     );
   }
 }
 
-// Dashboard Title
+// ============================================================
+// CENTERED DASHBOARD TITLE
+// ============================================================
+
 class _DashboardTitle extends StatelessWidget {
-  const _DashboardTitle({super.key});
+  const _DashboardTitle();
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Church Dashboard",
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          "Manage your church activities and stay connected",
-          style: TextStyle(color: Colors.grey[600]),
-        ),
-      ],
-    );
-  }
-}
-
-// Menu Card
-class _MenuCard extends StatelessWidget {
-  final Map<String, dynamic> item;
-  const _MenuCard({required this.item, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: const Offset(0, 4))
-        ],
-        color: Colors.white,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              height: 56,
-              width: 56,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: item["color"] as List<Color>),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(item["icon"] as IconData, color: Colors.white, size: 28),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              item["title"] as String,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item["description"] as String,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Quick Stats with Firestore
-class _QuickStatsFirestore extends StatelessWidget {
-  const _QuickStatsFirestore({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final membersRef = FirebaseFirestore.instance.collection('members');
-    final attendanceRef = FirebaseFirestore.instance.collection('attendance');
-    final donationsRef = FirebaseFirestore.instance.collection('donations');
-
-    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: membersRef.snapshots(),
-                builder: (context, snapshot) {
-                  int totalMembers = snapshot.hasData ? snapshot.data!.docs.length : 0;
-                  return _StatCard(
-                      title: "Total Members",
-                      value: "$totalMembers",
-                      colors: [Colors.purple, Colors.deepPurple]);
-                },
+            Container(
+              width: 5,
+              height: 26,
+              decoration: BoxDecoration(
+                color: gold,
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: attendanceRef.snapshots(),
-                builder: (context, snapshot) {
-                  double attendanceRate = 0;
-                  if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                    int total = snapshot.data!.docs.length;
-                    int attended = snapshot.data!.docs
-                        .where((doc) => doc['attended'] == true)
-                        .length;
-                    attendanceRate = total > 0 ? (attended / total * 100) : 0;
-                  }
-                  return _StatCard(
-                      title: "This Week's Attendance",
-                      value: "${attendanceRate.toStringAsFixed(1)}%",
-                      colors: [Colors.blue, Colors.blueAccent]);
-                },
+            const SizedBox(width: 10),
+            Text(
+              "Church Dashboard",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: -0.3,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        StreamBuilder<QuerySnapshot>(
-          stream: donationsRef.snapshots(),
-          builder: (context, snapshot) {
-            double totalDonations = 0;
-            if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-              totalDonations = snapshot.data!.docs.fold(0, (sum, doc) {
-                return sum + (doc['amount'] ?? 0);
-              });
-            }
-            return _StatCard(
-                title: "Monthly Donations",
-                value: "\$${totalDonations.toStringAsFixed(2)}",
-                colors: [Colors.green, Colors.greenAccent]);
-          },
+        const SizedBox(height: 8),
+        Text(
+          "Manage your church activities and stay connected",
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            color: Colors.white.withOpacity(0.92),
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
   }
 }
 
-// Stat Card
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final List<Color> colors;
+// ============================================================
+// CENTER-ALIGNED MENU CARD
+// ============================================================
 
-  const _StatCard(
-      {required this.title, required this.value, required this.colors, super.key});
+class _MenuCard extends StatelessWidget {
+  final Map<String, dynamic> item;
+
+  const _MenuCard({required this.item});
 
   @override
   Widget build(BuildContext context) {
+    final LinearGradient gradient = item["gradient"] as LinearGradient;
+
     return Container(
-      height: 120,
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: colors),
-        borderRadius: BorderRadius.circular(16),
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: gradient.colors.first.withOpacity(0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(title,
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 6),
-            Text(value,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
+            // Center Icon Container
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.22),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    item["icon"] as IconData,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
+            // Text Section
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  item["title"] as String,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item["description"] as String,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: Colors.white.withOpacity(0.85),
+                    height: 1.2,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            // Center Bottom Arrow Button
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.22),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// HEADER BUTTON
+// ============================================================
+
+class _HeaderButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final bool isDanger;
+
+  const _HeaderButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.isDanger = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDanger ? Colors.red : purple;
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(13),
+          child: Container(
+            width: 43,
+            height: 43,
+            decoration: BoxDecoration(
+              color: isDanger
+                  ? Colors.red.withOpacity(0.08)
+                  : const Color(0xFFF4ECFA),
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: color.withOpacity(0.08)),
+            ),
+            child: Icon(icon, color: color, size: 21),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// FOOTER
+// ============================================================
+
+class _DashboardFooter extends StatelessWidget {
+  const _DashboardFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 20),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 3,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            const SizedBox(height: 10),
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: "Developed by ",
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  TextSpan(
+                    text: "Roam Quest Technologies",
+                    style: GoogleFonts.plusJakartaSans(
+                      color: gold,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

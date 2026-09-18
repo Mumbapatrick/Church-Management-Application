@@ -39,6 +39,7 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(
+                //noinspection ProguardAndroidTxtUsage
                 getDefaultProguardFile("proguard-android.txt"),
                 "proguard-rules.pro"
             )
