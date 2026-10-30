@@ -46,3 +46,11 @@ app.*.map.json
 /android/app/release
 ios/Runner/Secrets.xcconfig
 *.deb
+# Local Android configuration
+android/local.properties
+
+# Android generated build reports
+android/build/
+
+# Firebase generated configuration
+.firebase/

@@ -21,12 +21,14 @@ class AdminMeetingSchedule extends StatefulWidget {
   const AdminMeetingSchedule({super.key, this.onBack});
 
   @override
-  State<AdminMeetingSchedule> createState() => _AdminMeetingScheduleState();
+  State<AdminMeetingSchedule> createState() =>
+      _AdminMeetingScheduleState();
 }
 
 class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
   DateTime? selectedDate;
   List<String> selectedSlots = [];
 
@@ -45,7 +47,7 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
     '16:30',
     '17:00',
     '17:30',
-    '18:00'
+    '18:00',
   ];
 
   @override
@@ -60,7 +62,10 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
     super.dispose();
   }
 
-  /// Save availability slots to Firestore
+  // ==========================================================
+  // SAVE AVAILABILITY
+  // ==========================================================
+
   Future<void> saveAvailability() async {
     if (selectedDate == null || selectedSlots.isEmpty) {
       _showSnackBar(
@@ -70,46 +75,94 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
       return;
     }
 
-    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate!);
+    final dateStr =
+    DateFormat('yyyy-MM-dd').format(selectedDate!);
 
-    await FirebaseFirestore.instance
-        .collection('availability')
-        .doc(dateStr)
-        .set({
-      'date': dateStr,
-      'availableSlots': selectedSlots,
-    });
+    try {
+      await FirebaseFirestore.instance
+          .collection('availability')
+          .doc(dateStr)
+          .set({
+        'date': dateStr,
+        'availableSlots': selectedSlots,
+      });
 
-    if (mounted) {
+      if (!mounted) return;
+
       _showSnackBar("Availability successfully saved!");
+
       setState(() {
         selectedDate = null;
         selectedSlots = [];
       });
+    } catch (e) {
+      if (!mounted) return;
+
+      _showSnackBar(
+        "Failed to save availability: $e",
+        isError: true,
+      );
     }
   }
 
-  /// Update individual meeting record status
-  Future<void> updateMeetingStatus(String meetingId, String status) async {
-    await FirebaseFirestore.instance
-        .collection('meetings')
-        .doc(meetingId)
-        .update({'status': status});
+  // ==========================================================
+  // UPDATE MEETING STATUS
+  // ==========================================================
+
+  Future<void> updateMeetingStatus(
+      String meetingId,
+      String status,
+      ) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('meetings')
+          .doc(meetingId)
+          .update({
+        'status': status,
+      });
+
+      if (!mounted) return;
+
+      _showSnackBar("Meeting status updated successfully.");
+    } catch (e) {
+      if (!mounted) return;
+
+      _showSnackBar(
+        "Failed to update meeting status: $e",
+        isError: true,
+      );
+    }
   }
 
-  void _showSnackBar(String message, {bool isError = false}) {
+  // ==========================================================
+  // SNACKBAR
+  // ==========================================================
+
+  void _showSnackBar(
+      String message, {
+        bool isError = false,
+      }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        backgroundColor: isError ? Colors.red.shade700 : purple,
+        backgroundColor:
+        isError ? Colors.red.shade700 : purple,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }
+
+  // ==========================================================
+  // MAIN BUILD
+  // ==========================================================
 
   @override
   Widget build(BuildContext context) {
@@ -117,10 +170,6 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-
-        // ====================================================
-        // GRADIENT BACKGROUND EXTENDED FULL HEIGHT
-        // ====================================================
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -156,22 +205,27 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
   }
 
   // ==========================================================
-  // TOP BAR (INCLUDES BACK ARROW ON THE LEFT)
+  // TOP BAR
   // ==========================================================
 
   Widget _buildTopBar() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 13,
+      ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1250),
+          constraints: const BoxConstraints(
+            maxWidth: 1250,
+          ),
           child: Row(
             children: [
-              // BACK ARROW BUTTON (Always visible now, falls back to Navigator.pop)
               _TopBarButton(
                 icon: Icons.arrow_back_rounded,
-                onTap: widget.onBack ?? () => Navigator.of(context).pop(),
+                onTap: widget.onBack ??
+                        () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: 12),
               Container(
@@ -194,6 +248,8 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                   children: [
                     Text(
                       'Appointments & Schedules',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 19,
                         fontWeight: FontWeight.w800,
@@ -203,6 +259,8 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                     SizedBox(height: 2),
                     Text(
                       'Manage available times and member requests',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.white70,
@@ -219,23 +277,30 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
   }
 
   // ==========================================================
-  // TAB BAR FILTERS
+  // TAB BAR
   // ==========================================================
 
   Widget _buildTabBar() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+      padding: const EdgeInsets.symmetric(
+        vertical: 12,
+        horizontal: 20,
+      ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1250),
+          constraints: const BoxConstraints(
+            maxWidth: 1250,
+          ),
           child: Container(
             height: 48,
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.16),
               borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.white.withOpacity(0.25)),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.25),
+              ),
             ),
             child: TabBar(
               controller: _tabController,
@@ -274,192 +339,281 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
 
   Widget _buildSetAvailabilityTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 35),
+      padding: const EdgeInsets.fromLTRB(
+        20,
+        8,
+        20,
+        35,
+      ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1250),
+          constraints: const BoxConstraints(
+            maxWidth: 1250,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Target Date Card
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.13),
-                      blurRadius: 22,
-                      offset: const Offset(0, 9),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: purple.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.event_available_rounded,
-                            color: purple,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Target Date',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF999999),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              selectedDate == null
-                                  ? "No date chosen"
-                                  : DateFormat('EEEE, MMM d, yyyy')
-                                  .format(selectedDate!),
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF202124),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: purple,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: const Icon(Icons.edit_calendar_rounded, size: 18),
-                      label: const Text(
-                        "Pick Date",
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      onPressed: () async {
-                        final date = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime(2100),
-                        );
-                        if (date != null) {
-                          setState(() => selectedDate = date);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              _buildTargetDateCard(),
 
               const SizedBox(height: 16),
 
-              // Time Slots Grid Card
+              _buildTimeSlotsCard(),
+
+              const SizedBox(height: 20),
+
+              _buildSaveAvailabilityButton(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // TARGET DATE CARD
+  // FIXED: NO UNBOUNDED HORIZONTAL FLEX LAYOUT
+  // ==========================================================
+
+  Widget _buildTargetDateCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.13),
+            blurRadius: 22,
+            offset: const Offset(0, 9),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
               Container(
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.13),
-                      blurRadius: 22,
-                      offset: const Offset(0, 9),
-                    ),
-                  ],
+                  color: purple.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.all(20),
+                child: const Icon(
+                  Icons.event_available_rounded,
+                  color: purple,
+                  size: 22,
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Available Time Slots',
+                      'Target Date',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 11,
+                        color: Color(0xFF999999),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+
+                    const SizedBox(height: 3),
+
+                    Text(
+                      selectedDate == null
+                          ? "No date chosen"
+                          : DateFormat(
+                        'EEEE, MMM d, yyyy',
+                      ).format(selectedDate!),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF202124),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: timeSlots.map((slot) {
-                        final isSelected = selectedSlots.contains(slot);
-                        return ChoiceChip(
-                          label: Text(slot),
-                          selected: isSelected,
-                          selectedColor: purple,
-                          backgroundColor: const Color(0xFFF4ECFA),
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : purple,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                          side: BorderSide.none,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide.none,
-                          ),
-                          onSelected: (value) {
-                            setState(() {
-                              if (value) {
-                                selectedSlots.add(slot);
-                              } else {
-                                selectedSlots.remove(slot);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
                   ],
                 ),
               ),
+            ],
+          ),
 
-              const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-              // Save Button
-              ElevatedButton.icon(
-                onPressed: saveAvailability,
-                icon: const Icon(Icons.check_circle_rounded, size: 20),
-                label: const Text(
-                  "Save Availability",
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: purple,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 13,
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: gold,
-                  foregroundColor: purpleDark,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ],
+              icon: const Icon(
+                Icons.edit_calendar_rounded,
+                size: 18,
+              ),
+              label: const Text(
+                "Pick Date",
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              onPressed: () async {
+                final now = DateTime.now();
+
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: selectedDate ?? now,
+                  firstDate: DateTime(
+                    now.year,
+                    now.month,
+                    now.day,
+                  ),
+                  lastDate: DateTime(2100),
+                );
+
+                if (date != null && mounted) {
+                  setState(() {
+                    selectedDate = date;
+                  });
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // TIME SLOTS CARD
+  // ==========================================================
+
+  Widget _buildTimeSlotsCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.13),
+            blurRadius: 22,
+            offset: const Offset(0, 9),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Available Time Slots',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF202124),
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            'Select the times when members can book appointments.',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: timeSlots.map((slot) {
+              final isSelected =
+              selectedSlots.contains(slot);
+
+              return ChoiceChip(
+                label: Text(slot),
+                selected: isSelected,
+                selectedColor: purple,
+                backgroundColor: const Color(0xFFF4ECFA),
+                labelStyle: TextStyle(
+                  color: isSelected
+                      ? Colors.white
+                      : purple,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+                side: BorderSide.none,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide.none,
+                ),
+                onSelected: (value) {
+                  setState(() {
+                    if (value) {
+                      if (!selectedSlots.contains(slot)) {
+                        selectedSlots.add(slot);
+                      }
+                    } else {
+                      selectedSlots.remove(slot);
+                    }
+                  });
+                },
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // SAVE BUTTON
+  // ==========================================================
+
+  Widget _buildSaveAvailabilityButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: saveAvailability,
+        icon: const Icon(
+          Icons.check_circle_rounded,
+          size: 20,
+        ),
+        label: const Text(
+          "Save Availability",
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: gold,
+          foregroundColor: purpleDark,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(
+            vertical: 15,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
@@ -478,16 +632,21 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return _buildErrorState(snapshot.error.toString());
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+          return _buildErrorState(
+            snapshot.error.toString(),
           );
         }
 
-        final meetings = snapshot.data!.docs;
+        if (snapshot.connectionState ==
+            ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Colors.white,
+            ),
+          );
+        }
+
+        final meetings = snapshot.data?.docs ?? [];
 
         if (meetings.isEmpty) {
           return _buildEmptyState();
@@ -495,25 +654,59 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 1000 ? 3 : 2;
+            // RESPONSIVE GRID:
+            // Phones: 1 column
+            // Tablets: 2 columns
+            // Desktops: 3 columns
+
+            final double screenWidth =
+                constraints.maxWidth;
+
+            final int columns = screenWidth < 600
+                ? 1
+                : screenWidth < 1000
+                ? 2
+                : 3;
+
+            // Fixed card height avoids GridView aspect-ratio
+            // calculations making cards too short.
+
+            final double cardHeight = columns == 1
+                ? 310
+                : columns == 2
+                ? 320
+                : 330;
 
             return Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1250),
+                constraints: const BoxConstraints(
+                  maxWidth: 1250,
+                ),
                 child: GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 35),
+                  padding: const EdgeInsets.fromLTRB(
+                    20,
+                    8,
+                    20,
+                    35,
+                  ),
                   itemCount: meetings.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate:
+                  SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: columns,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    childAspectRatio: columns == 3 ? 1.05 : 0.95,
+                    mainAxisExtent: cardHeight,
                   ),
                   itemBuilder: (context, index) {
                     final doc = meetings[index];
-                    final data = doc.data() as Map<String, dynamic>;
 
-                    return _buildMeetingCard(doc.id, data);
+                    final data =
+                    doc.data() as Map<String, dynamic>;
+
+                    return _buildMeetingCard(
+                      doc.id,
+                      data,
+                    );
                   },
                 ),
               ),
@@ -528,33 +721,56 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
   // MEETING CARD
   // ==========================================================
 
-  Widget _buildMeetingCard(String docId, Map<String, dynamic> data) {
-    final status = (data['status'] ?? 'pending').toString().toLowerCase();
+  Widget _buildMeetingCard(
+      String docId,
+      Map<String, dynamic> data,
+      ) {
+    final status =
+    (data['status'] ?? 'pending')
+        .toString()
+        .toLowerCase();
 
     List<Color> headerColors;
     IconData statusIcon;
 
     switch (status) {
       case 'confirmed':
-        headerColors = const [Color(0xFF0F766E), Color(0xFF2DD4BF)];
+        headerColors = const [
+          Color(0xFF0F766E),
+          Color(0xFF2DD4BF),
+        ];
         statusIcon = Icons.check_circle_rounded;
         break;
+
       case 'completed':
-        headerColors = const [Color(0xFF2563EB), Color(0xFF60A5FA)];
+        headerColors = const [
+          Color(0xFF2563EB),
+          Color(0xFF60A5FA),
+        ];
         statusIcon = Icons.task_alt_rounded;
         break;
+
       case 'cancelled':
-        headerColors = const [Color(0xFFDC2626), Color(0xFFA855F7)];
+        headerColors = const [
+          Color(0xFFDC2626),
+          Color(0xFFA855F7),
+        ];
         statusIcon = Icons.cancel_rounded;
         break;
+
       default:
-        headerColors = const [purple, purpleLight];
+        headerColors = const [
+          purple,
+          purpleLight,
+        ];
         statusIcon = Icons.pending_actions_rounded;
     }
 
-    final dateStr = data['date'] ?? '';
+    final dateStr =
+    (data['date'] ?? '').toString();
 
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -570,6 +786,10 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ==================================================
+          // CARD HEADER
+          // ==================================================
+
           Container(
             height: 95,
             width: double.infinity,
@@ -594,10 +814,13 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                     ),
                   ),
                 ),
+
                 Padding(
                   padding: const EdgeInsets.all(14),
                   child: Row(
                     children: [
+                      // DATE BOX
+
                       Container(
                         width: 58,
                         height: 64,
@@ -606,7 +829,8 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                          MainAxisAlignment.center,
                           children: [
                             Text(
                               _monthName(dateStr),
@@ -616,7 +840,9 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
+
                             const SizedBox(height: 1),
+
                             Text(
                               _dayNumber(dateStr),
                               style: const TextStyle(
@@ -628,20 +854,28 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                           ],
                         ),
                       ),
+
                       const SizedBox(width: 12),
+
+                      // MEETING DETAILS
+
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                          mainAxisAlignment:
+                          MainAxisAlignment.center,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
+                              padding:
+                              const EdgeInsets.symmetric(
                                 horizontal: 8,
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius:
+                                BorderRadius.circular(16),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -651,7 +885,9 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                                     color: Colors.white,
                                     size: 12,
                                   ),
+
                                   const SizedBox(width: 4),
+
                                   Text(
                                     status.toUpperCase(),
                                     style: const TextStyle(
@@ -663,9 +899,12 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                                 ],
                               ),
                             ),
+
                             const SizedBox(height: 6),
+
                             Text(
-                              data['purpose'] ?? 'General Meeting',
+                              data['purpose'] ??
+                                  'General Meeting',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -683,6 +922,11 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
               ],
             ),
           ),
+
+          // ==================================================
+          // CARD BODY
+          // ==================================================
+
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -692,32 +936,47 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                   _InfoRow(
                     icon: Icons.person_rounded,
                     title: 'Member',
-                    value: data['memberName'] ?? 'N/A',
+                    value:
+                    (data['memberName'] ?? 'N/A').toString(),
                     color: headerColors.first,
                   ),
+
                   const SizedBox(height: 8),
+
                   _InfoRow(
                     icon: Icons.phone_rounded,
                     title: 'Phone',
-                    value: data['memberPhone'] ?? 'N/A',
+                    value:
+                    (data['memberPhone'] ?? 'N/A').toString(),
                     color: headerColors.first,
                   ),
+
                   const SizedBox(height: 8),
+
                   _InfoRow(
                     icon: Icons.access_time_rounded,
                     title: 'Time',
-                    value: data['time'] ?? 'N/A',
+                    value:
+                    (data['time'] ?? 'N/A').toString(),
                     color: headerColors.first,
                   ),
+
                   const Spacer(),
+
+                  // UPDATE STATUS BUTTON
+
                   SizedBox(
                     width: double.infinity,
                     child: PopupMenuButton<String>(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      onSelected: (newStatus) =>
-                          updateMeetingStatus(docId, newStatus),
+                      onSelected: (newStatus) {
+                        updateMeetingStatus(
+                          docId,
+                          newStatus,
+                        );
+                      },
                       itemBuilder: (context) => const [
                         PopupMenuItem(
                           value: "confirmed",
@@ -733,7 +992,9 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                         ),
                       ],
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 9,
+                        ),
                         decoration: BoxDecoration(
                           color: headerColors.first.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(12),
@@ -742,7 +1003,8 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                           ),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                          MainAxisAlignment.center,
                           children: [
                             Text(
                               "Update Status",
@@ -752,7 +1014,9 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
+
                             const SizedBox(width: 4),
+
                             Icon(
                               Icons.arrow_drop_down_rounded,
                               color: headerColors.first,
@@ -773,7 +1037,7 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
   }
 
   // ==========================================================
-  // EMPTY & ERROR STATES
+  // EMPTY STATE
   // ==========================================================
 
   Widget _buildEmptyState() {
@@ -801,7 +1065,9 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                 color: purple,
               ),
             ),
+
             const SizedBox(height: 15),
+
             const Text(
               'No Meetings Found',
               style: TextStyle(
@@ -809,7 +1075,9 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                 fontWeight: FontWeight.w800,
               ),
             ),
+
             const SizedBox(height: 6),
+
             Text(
               'There are no appointment requests at this time.',
               textAlign: TextAlign.center,
@@ -823,6 +1091,10 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
       ),
     );
   }
+
+  // ==========================================================
+  // ERROR STATE
+  // ==========================================================
 
   Widget _buildErrorState(String error) {
     return Center(
@@ -841,7 +1113,9 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
               color: Colors.red,
               size: 45,
             ),
+
             const SizedBox(height: 12),
+
             const Text(
               'Unable to load meetings',
               style: TextStyle(
@@ -849,7 +1123,9 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
                 fontWeight: FontWeight.w800,
               ),
             ),
+
             const SizedBox(height: 6),
+
             Text(
               error,
               textAlign: TextAlign.center,
@@ -864,9 +1140,14 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
     );
   }
 
+  // ==========================================================
+  // DATE HELPERS
+  // ==========================================================
+
   String _monthName(String date) {
     try {
       final parsed = DateTime.parse(date);
+
       const months = [
         'JAN',
         'FEB',
@@ -879,8 +1160,9 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
         'SEP',
         'OCT',
         'NOV',
-        'DEC'
+        'DEC',
       ];
+
       return months[parsed.month - 1];
     } catch (_) {
       return 'DATE';
@@ -890,6 +1172,7 @@ class _AdminMeetingScheduleState extends State<AdminMeetingSchedule>
   String _dayNumber(String date) {
     try {
       final parsed = DateTime.parse(date);
+
       return parsed.day.toString().padLeft(2, '0');
     } catch (_) {
       return '--';
@@ -925,9 +1208,15 @@ class _InfoRow extends StatelessWidget {
             color: color.withOpacity(0.08),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: color, size: 16),
+          child: Icon(
+            icon,
+            color: color,
+            size: 16,
+          ),
         ),
+
         const SizedBox(width: 9),
+
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -940,7 +1229,9 @@ class _InfoRow extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+
               const SizedBox(height: 1),
+
               Text(
                 value,
                 maxLines: 1,
@@ -959,11 +1250,18 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
+// ============================================================
+// TOP BAR BUTTON
+// ============================================================
+
 class _TopBarButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _TopBarButton({required this.icon, required this.onTap});
+  const _TopBarButton({
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -979,7 +1277,11 @@ class _TopBarButton extends StatelessWidget {
             color: Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(13),
           ),
-          child: Icon(icon, color: Colors.white, size: 22),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 22,
+          ),
         ),
       ),
     );

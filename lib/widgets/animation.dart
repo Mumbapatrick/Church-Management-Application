@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// A modern, interactive card wrapper providing entrance animations,
-/// springy touch feedback, and seamless screen transitions.
 class ReusableEventCard extends StatefulWidget {
   final Widget child;
   final int index;
